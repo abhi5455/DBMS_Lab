@@ -1,0 +1,2 @@
+# DBMS_Lab
+KTU S5 DBMS Lab
