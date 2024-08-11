@@ -214,6 +214,33 @@ SELECT ps.Scan_name, ps.Amount,  COUNT(ps.Scan_name)AS Scan_Count, COUNT(ps.Scan
 FROM Patients_scan AS ps
 GROUP BY ps.Scan_name,ps.Amount;
 
+-- (f)
+
+(   
+    WITH Most_Recent AS(  
+        SELECT Scan_name
+        FROM Patients_scan
+        ORDER BY Scan_date DESC
+        LIMIT 1
+    )
+    SELECT s.* , 'Most Recent' AS Scan_Status
+    FROM Scan AS s JOIN Most_Recent AS mr
+    ON s.Scan_name = mr.Scan_name
+)
+UNION
+(
+    WITH Least_Recent AS(
+        SELECT Scan_name
+        FROM Patients_scan
+        ORDER BY Scan_date ASC
+        LIMIT 1
+    )
+    SELECT s.* , 'Least Recent' AS Scan_Status
+    FROM Scan AS s JOIN Least_Recent AS lr
+    ON s.Scan_name = lr.Scan_name
+);
+
+
 -- (g)(1)
 
 WITH Doct AS(
