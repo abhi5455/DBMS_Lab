@@ -190,7 +190,7 @@ CREATE VIEW FoodDetails AS (
 
 -- (d)(1)
 
-SELECT fd.foodItem,fd.type,fd.price, COUNT(fd.food_Item) AS Frequency
+SELECT fd.foodItem,fd.type,fd.price, COUNT(fd.food_Item) AS Max_Odered_freq
 FROM FoodDetails AS fd
 GROUP BY fd.foodItem
 HAVING COUNT(fd.foodItem) = ( 
@@ -205,7 +205,7 @@ HAVING COUNT(fd.foodItem) = (
 
 -- (d)(2)
 
-SELECT fd.foodItem,fd.type,fd.price, COUNT(fd.food_Item) AS Frequency
+SELECT fd.foodItem,fd.type,fd.price, COUNT(fd.food_Item) AS Min_Odered_freq
 FROM FoodDetails AS fd
 GROUP BY fd.foodItem
 HAVING COUNT(fd.foodItem) = ( 
