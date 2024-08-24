@@ -60,13 +60,13 @@ CREATE TABLE Food(
 );
 
 CREATE TABLE FoodOrders(
-    foodItem VARCHAR(100),
+    food_Item VARCHAR(100),
     roomNo INT,
     resident_adhNo BIGINT,
     date DATE,
     orderedTime TIME,
-    PRIMARY KEY (foodItem,roomNo,resident_adhNo,date,orderedTime),
-    FOREIGN KEY (foodItem) REFERENCES Food(foodItem),
+    PRIMARY KEY (food_Item,roomNo,resident_adhNo,date,orderedTime),
+    FOREIGN KEY (food_Item) REFERENCES Food(foodItem),
     FOREIGN KEY (roomNo) REFERENCES Rooms(roomNo),
     FOREIGN KEY (resident_adhNo) REFERENCES Residents(adhNo)
 );
@@ -124,7 +124,7 @@ INSERT INTO Food (foodItem, type, price) VALUES
     ('Chappati and Chicken Curry', 'Non-Vegetarian', 180),
     ('Chappati and Paneer Curry', 'Vegetarian', 170);
 
-INSERT INTO FoodOrders (foodItem, roomNo, resident_adhNo, date, orderedTime) VALUES 
+INSERT INTO FoodOrders (food_Item, roomNo, resident_adhNo, date, orderedTime) VALUES 
     ('Chicken Biriyani', 101, 667788990011, '2024-08-06', '12:30:00'),
     ('Veg Biriyani', 102, 778899001122, '2024-08-07', '13:00:00'),
     ('Fried Rice and ChilliChicken', 103, 889900112233, '2024-08-08', '19:00:00'),
@@ -182,36 +182,48 @@ WHERE adhNo IN (
 ); 
 
 
+CREATE VIEW FoodDetails AS (
+    SELECT * 
+    FROM FoodOrders AS fo JOIN Food AS f 
+    ON fo.food_Item=f.foodItem 
+);
+
 -- (d)(1)
 
-SELECT f.*, COUNT(fo.foodItem) AS Frequency
-FROM FoodOrders AS fo JOIN Food AS f 
-ON fo.foodItem=f.foodItem 
-GROUP BY foodItem
-HAVING COUNT(fo.foodItem) = ( 
+SELECT fd.foodItem,fd.type,fd.price, COUNT(fd.food_Item) AS Frequency
+FROM FoodDetails AS fd
+GROUP BY fd.foodItem
+HAVING COUNT(fd.foodItem) = ( 
     SELECT MAX(foodCount)
     FROM(
-        SELECT COUNT(foodItem) AS foodCount
+        SELECT COUNT(food_Item) AS foodCount
         FROM FoodOrders
-        GROUP BY foodItem
+        GROUP BY food_Item
     ) AS sub1
 );
 
 
 -- (d)(2)
 
-SELECT f.*, COUNT(fo.foodItem) AS Frequency
-FROM FoodOrders AS fo JOIN Food AS f
-ON fo.foodItem=f.foodItem 
-GROUP BY foodItem
-HAVING COUNT(fo.foodItem) =(
+SELECT fd.foodItem,fd.type,fd.price, COUNT(fd.food_Item) AS Frequency
+FROM FoodDetails AS fd
+GROUP BY fd.foodItem
+HAVING COUNT(fd.foodItem) = ( 
     SELECT MIN(foodCount)
     FROM(
-        SELECT COUNT(foodItem) AS foodCount
+        SELECT COUNT(food_Item) AS foodCount
         FROM FoodOrders
-        GROUP BY foodItem 
+        GROUP BY food_Item
     ) AS sub1
 );
+
+
+-- (e)
+
+SELECT fd.foodItem,fd.type, COUNT(fd.food_Item) AS Odered_freq, fd.price
+FROM FoodDetails AS fd
+GROUP BY fd.food_Item
+ORDER BY COUNT(fd.food_Item) ASC,fd.price DESC;
 
 
 DROP DATABASE Resort;
