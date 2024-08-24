@@ -90,15 +90,25 @@ INSERT INTO Rooms (roomNo, roomType, capacity) VALUES
     (101, 'AC', 'Single Bed'),
     (102, 'AC', 'Double Bed'),
     (103, 'AC', 'Double Bed'),
-    (104, 'Non-AC', 'Single Bed'),
-    (105, 'AC', 'Single Bed');
+    (104, 'AC', 'Single Bed'),
+    (105, 'AC', 'Single Bed'),
+    (106, 'Non-AC', 'Double Bed'),
+    (107, 'Non-AC', 'Double Bed'),
+    (108, 'Non-AC', 'Single Bed');
 
 INSERT INTO Booking (booking_ID, resident_adhNo, roomNo, booking_date, checkin_date, checkout_date, status) VALUES 
     (1001, 667788990011, 101, '2024-08-01', '2024-08-05', '2024-08-10', 'Confirmed'),
     (1002, 778899001122, 102, '2024-08-02', '2024-08-06', '2024-08-11', 'Pending'),
     (1003, 889900112233, 103, '2024-08-03', '2024-08-07', '2024-08-12', 'Cancelled'),
     (1002, 778899001122, 104, '2024-08-04', '2024-08-08', '2024-08-13', 'Confirmed'),
-    (1005, 778899001122, 105, '2024-08-05', '2024-08-09', '2024-08-14', 'Pending');
+    (1005, 778899001122, 105, '2024-08-05', '2024-08-09', '2024-08-14', 'Pending'),
+    (1006, 778899001122, 102, '2024-09-04', '2024-09-08', '2024-09-13', 'Confirmed'),
+    (1008, 778899001122, 101, '2024-09-04', '2024-10-08', '2024-10-13', 'Confirmed'),
+    (1002, 778899001122, 108, '2024-09-04', '2024-11-08', '2024-12-13', 'Confirmed'),
+    (1009, 667788990011, 101, '2024-08-01', '2024-08-05', '2024-08-10', 'Confirmed'),
+    (1009, 667788990011, 103, '2024-08-03', '2024-08-07', '2024-08-12', 'Cancelled'),
+    (1007, 667788990011, 105, '2024-08-10', '2024-08-15', '2024-08-20', 'Confirmed');
+
 
 INSERT INTO Companions (Companion_Name, Companion_Gender, Companion_mobile, C_booking_ID) VALUES 
     ('Ethan Green', 'Male', 9098765432, 1001),
@@ -159,6 +169,19 @@ WHERE bd.checkin_date between '2024-08-05' and '2024-08-07'
 GROUP BY booking_ID;
 
 
+-- (c)
+SELECT *
+FROM Residents
+WHERE adhNo IN (
+    SELECT bd.resident_adhNo
+    FROM Booking AS bd JOIN Rooms as rm
+    ON bd.roomNo=rm.roomNo
+    WHERE rm.roomType='AC'
+    GROUP BY bd.resident_adhNo
+    HAVING COUNT(DISTINCT bd.booking_ID)>=2 AND COUNT(bd.booking_ID)>2
+); 
+
+
 -- (d)(1)
 
 SELECT f.*, COUNT(fo.foodItem) AS Frequency
@@ -189,14 +212,6 @@ HAVING COUNT(fo.foodItem) =(
         GROUP BY foodItem 
     ) AS sub1
 );
-
--- (c)
-SELECT bd.booking_ID
-FROM Booking_Details AS bd JOIN Rooms as rm
-ON bd.roomNo=rm.roomNo
-WHERE rm.roomType='AC'
-GROUP BY bd.booking_ID
-HAVING COUNT(bd.booking_ID)>3; 
 
 
 DROP DATABASE Resort;
