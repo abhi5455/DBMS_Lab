@@ -166,7 +166,7 @@ WHERE adhNo IN (
 SELECT bd.booking_ID,bd.Name,bd.address,bd.adhNo,bd.Gender,bd.age,bd.mobile,bd.email, COUNT(resident_adhNo) AS No_of_Companions
 FROM Booking_Details AS bd
 WHERE bd.checkin_date between '2024-08-05' and '2024-08-07'
-GROUP BY booking_ID;
+GROUP BY bd.booking_ID, bd.Name, bd.address, bd.adhNo, bd.Gender, bd.age, bd.mobile, bd.email;
 
 
 -- (c)
