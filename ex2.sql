@@ -54,15 +54,15 @@ CREATE TABLE Patients_test(
 );
 
 CREATE TABLE Patients_scan(
-    Patient_adhNo VARCHAR(12),
+    Patients_adhNo VARCHAR(12),
     Scan_name VARCHAR(20),
     Scan_date DATE,
     Doct_adhNo VARCHAR(12),
     Amount BIGINT,
     presc_path VARCHAR(50),
     result_path VARCHAR(50),
-    PRIMARY KEY (Patient_adhNo, Scan_name, Scan_date, Doct_adhNo),
-    FOREIGN KEY (Patient_adhNo) REFERENCES Patients(adhNo),
+    PRIMARY KEY (Patients_adhNo, Scan_name, Scan_date, Doct_adhNo),
+    FOREIGN KEY (Patients_adhNo) REFERENCES Patients(adhNo),
     FOREIGN KEY (Scan_name) REFERENCES Scan(Scan_name),
     FOREIGN KEY (Doct_adhNo) REFERENCES Doctor(adhNo)
 );
@@ -110,6 +110,8 @@ INSERT INTO Patients_test VALUES
     ("323232323232","Blood Test","122232425262",'2024-08-20',300),
     ("121212121212","Biopsy","112131415161",'2024-09-11',1000),
     ("121212121212","Blood Test","112131415161",'2024-10-1',300),
+    ("121212121212","Blood Test","112131415161",'2024-10-5',300),
+    ("121212121212","Blood Test","112131415161",'2024-10-10',300),
     ("323232323232","Urinanalysis","122232425262",'2024-08-20',250),
     ("757575757575","Genetic Testing","345678901234",'2024-09-10',800),
     ("545454545454","Allergy Testing","678901234567",'2024-08-25',1000),
@@ -154,53 +156,40 @@ ORDER BY pt.Test_name;
 
 -- (c)(1)
 
-WITH TestCounts AS(
-    SELECT pt.Test_name, COUNT(pt.Test_name) AS Test_Count
-    FROM Patients_test AS pt
-    GROUP BY pt.Test_name
-),
-MaxCount AS(
-    SELECT MAX(Test_Count) AS Max_Count
-    FROM TestCounts
-)
-SELECT tc.Test_name, tc.Test_Count as Max_Count
-From TestCounts AS tc JOIN MaxCount AS mc
-WHERE (tc.Test_Count=mc.Max_Count);
+SELECT (pt.Test_name), COUNT(pt.Test_name) As Max_Count
+FROM Patients_test AS pt
+GROUP BY pt.Test_name
+HAVING COUNT(pt.Test_name) = (
+    SELECT MAX(max_count)
+    FROM(
+        SELECT COUNT(pt.Test_name) AS max_count
+        FROM Patients_test AS pt
+        GROUP BY pt.Test_name
+    ) AS subquery
+);
 
 -- (c)(2)
 
-WITH TestCounts AS(
-    SELECT pt.Test_name,COUNT(pt.Test_name) AS Test_Count
-    FROM Patients_test AS pt
-    GROUP BY pt.Test_name
-),
-MinCount AS(
-    SELECT MIN(Test_Count) AS Min_Count
-    FROM TestCounts
-)
-SELECT tc.Test_name, tc.Test_Count AS Min_Count
-From TestCounts AS tc JOIN MinCount AS mc
-WHERE tc.Test_Count = mc.Min_Count;
+SELECT (pt.Test_name), COUNT(pt.Test_name) As Min_Count
+FROM Patients_test AS pt
+GROUP BY pt.Test_name
+HAVING COUNT(pt.Test_name) = (
+    SELECT MIN(min_count)
+    FROM(
+        SELECT COUNT(pt.Test_name) AS min_count
+        FROM Patients_test AS pt
+        GROUP BY pt.Test_name
+    ) AS subquery
+);
 
 -- (d)
 
-WITH ScanCounts AS(
-    SELECT ps.Patient_adhNo,ps.Scan_name, COUNT(ps.Scan_name) AS Scan_Count
-    FROM Patients_scan AS ps
-    GROUP BY ps.Patient_adhNo, ps.Scan_name
-),
-Exception AS(
-    SELECT sc.Patient_adhNo
-    FROM ScanCounts AS sc
-    WHERE sc.Scan_Count > 2
-),
-Derrived AS(SELECT DISTINCT sc.Patient_adhNo AS adhNo
-FROM ScanCounts AS sc JOIN Exception AS e
-ON sc.Patient_adhNo <> e.Patient_adhNo
-)
-SELECT pt.Test_name, p.*
-FROM Patients_test pt JOIN Derrived d JOIN Patients AS p
-ON pt.Patient_adhNo=d.adhNo AND d.adhNo=p.adhNo;
+
+SELECT pt.Test_name, p.*, COUNT(pt.Patient_adhNo) AS Test_Freq
+FROM Patients_test AS pt JOIN Patients AS p
+ON pt.Patient_adhNo=p.adhNo
+GROUP BY pt.Patient_adhNo,pt.Test_name
+HAVING COUNT(pt.Patient_adhNo) <= 2;
 
 -- (e)(1)
 
@@ -216,100 +205,98 @@ GROUP BY ps.Scan_name,ps.Amount;
 
 -- (f)
 
-(   
-    WITH Most_Recent AS(  
-        SELECT Scan_name
-        FROM Patients_scan
-        ORDER BY Scan_date DESC
-        LIMIT 1
-    )
-    SELECT s.* , 'Most Recent' AS Scan_Status
-    FROM Scan AS s JOIN Most_Recent AS mr
-    ON s.Scan_name = mr.Scan_name
+SELECT s.*, 'Most Recent' AS Scan_Status
+FROM Patients_scan AS ps JOIN Scan AS s
+ON ps.Scan_name=s.Scan_name
+WHERE ps.Scan_date = (
+    SELECT MAX(Scan_date)
+    FROM(
+        SELECT Scan_date
+        FROM Patients_scan AS ps
+        GROUP BY ps.Scan_date
+    ) A
 )
 UNION
-(
-    WITH Least_Recent AS(
-        SELECT Scan_name
-        FROM Patients_scan
-        ORDER BY Scan_date ASC
-        LIMIT 1
-    )
-    SELECT s.* , 'Least Recent' AS Scan_Status
-    FROM Scan AS s JOIN Least_Recent AS lr
-    ON s.Scan_name = lr.Scan_name
+SELECT s.*, 'Least Recent' AS Scan_Status
+FROM Patients_scan AS ps JOIN Scan AS s
+ON ps.Scan_name=s.Scan_name
+WHERE ps.Scan_date = (
+    SELECT MIN(Scan_date)
+    FROM(
+        SELECT Scan_date
+        FROM Patients_scan AS ps
+        GROUP BY ps.Scan_date
+    ) A
 );
-
 
 -- (g)(1)
 
-WITH Doct AS(
-    SELECT pt.Doct_adhNo, COUNT(pt.Doct_adhNo) AS Doct_Count
+SELECT d.*, max_doct.test_count
+FROM Doctor AS d
+JOIN (
+    SELECT pt.Doct_adhNo, COUNT(pt.Doct_adhNo) AS test_count
     FROM Patients_test AS pt
-    WHERE pt.Test_date between '2023-01-01' AND '2024-11-05'
+    WHERE pt.Test_date BETWEEN '2023-01-01' AND '2024-08-28'
     GROUP BY pt.Doct_adhNo
-),
-Max_Count AS(
-    SELECT MAX(Doct_Count) AS Max_Count
-    FROM Doct
-),
-DoctID AS(
-    SELECT d.Doct_adhNo, mc.Max_Count AS Max_Count
-    FROM Doct AS d JOIN Max_Count AS mc
-    WHERE d.Doct_Count= mc.Max_Count
-)
-SELECT d.*, di.Max_Count AS Test_Count
-FROM Doctor AS d JOIN DoctID AS di
-ON d.adhNo = di.Doct_adhNo;
+    HAVING COUNT(pt.Doct_adhNo) =(
+        SELECT MAX(max_count)
+        FROM(
+            SELECT COUNT(pt.Doct_adhNo) AS max_count
+            FROM Patients_test AS pt
+            WHERE pt.Test_date BETWEEN '2023-01-01' AND '2024-08-28'
+            GROUP BY pt.Doct_adhNo
+        )AS subquery
+    )
+) AS max_doct 
+ON d.adhNo = max_doct.Doct_adhNo;
 
 -- (g)(2)
 
-WITH Doct AS(
-    SELECT pt.Doct_adhNo, COUNT(pt.Doct_adhNo) AS Doct_Count
+SELECT d.*, min_doct.test_count
+FROM Doctor AS d
+JOIN (
+    SELECT pt.Doct_adhNo, COUNT(pt.Doct_adhNo) AS test_count
     FROM Patients_test AS pt
-    WHERE pt.Test_date between '2023-01-01' AND '2024-08-28'
+    WHERE pt.Test_date BETWEEN '2023-01-01' AND '2024-08-28'
     GROUP BY pt.Doct_adhNo
-),
-Min_Count AS(
-    SELECT MIN(Doct_Count) AS Min_Count
-    FROM Doct
-),
-DoctID AS(
-    SELECT d.Doct_adhNo, mc.Min_Count
-    FROM Doct AS d JOIN Min_Count AS mc
-    ON d.Doct_Count = mc.Min_Count
-)
-SELECT d.*, di.Min_Count AS Scan_Count
-FROM DoctID AS di JOIN Doctor AS d
-ON d.adhNo = di.Doct_adhNo;
+    HAVING COUNT(pt.Doct_adhNo) =(
+        SELECT MIN(min_count)
+        FROM(
+            SELECT COUNT(pt.Doct_adhNo) AS min_count
+            FROM Patients_test AS pt
+            WHERE pt.Test_date BETWEEN '2023-01-01' AND '2024-08-28'
+            GROUP BY pt.Doct_adhNo
+        )AS subquery
+    )
+) AS min_doct 
+ON d.adhNo = min_doct.Doct_adhNo;
 
 
 -- (h)
 
-WITH Doct_Test AS (
-    SELECT pt.Doct_adhNo, pt.Test_name, COUNT(pt.Test_name) * pt.Amount AS Revenue
-    FROM Patients_test AS pt
-    GROUP BY pt.Doct_adhNo, pt.Test_name, pt.Amount
-),
-Doct_Test_Rev AS (
-    SELECT Doct_adhNo,SUM(Revenue) AS Test_Revenue
-    FROM Doct_Test
-    GROUP BY Doct_Test.Doct_adhNo
-),
-Doct_Scan AS (
-    SELECT ps.Doct_adhNo, COUNT(ps.Scan_name) * ps.Amount AS Revenue
-    FROM Patients_scan AS ps
-    GROUP BY ps.Doct_adhNo, ps.Scan_name, ps.Amount
-),
-Doct_Scan_Rev AS(
-    SELECT Doct_adhNo, SUM(Revenue) AS Scan_Revenue
-    FROM Doct_Scan
-    GROUP BY Doct_Scan.Doct_adhNo
-)
-SELECT d.*,dtr.Test_Revenue, dsr.Scan_Revenue
-FROM Doct_Test_Rev AS dtr JOIN Doct_Scan_Rev AS dsr JOIN Doctor AS d
-ON dtr.Doct_adhNo = dsr.Doct_adhNo AND dtr.Doct_adhNo = d.adhNo
-ORDER BY dtr.Test_Revenue;
+SELECT IFNULL(A.Doct_adhNo,B.Doct_adhNo) AS Doctor_adhNo, IFNULL(A.Test_Revenue, 0) AS Test_Revenue , IFNULL(B.Scan_Revenue, 0) AS Scan_Revenue
+FROM
+    (SELECT Doct_adhNo, SUM(Amount) AS Test_Revenue
+    FROM Patients_test 
+    GROUP BY Doct_adhNo) AS A 
+    LEFT JOIN
+    (SELECT Doct_adhNo, SUM(Amount) AS Scan_Revenue 
+    FROM Patients_scan 
+    GROUP BY Doct_adhNo) AS B
+    ON A.Doct_adhNo = B.Doct_adhNo
+
+UNION
+
+SELECT IFNULL(A.Doct_adhNo,B.Doct_adhNo) AS Doctor_adhNo, IFNULL(A.Test_Revenue, 0) AS Test_Revenue , IFNULL(B.Scan_Revenue, 0) AS Scan_Revenue
+FROM
+    (SELECT Doct_adhNo, SUM(Amount) AS Test_Revenue
+    FROM Patients_test 
+    GROUP BY Doct_adhNo) AS A 
+    RIGHT JOIN
+    (SELECT Doct_adhNo, SUM(Amount) AS Scan_Revenue 
+    FROM Patients_scan 
+    GROUP BY Doct_adhNo) AS B
+    ON A.Doct_adhNo = B.Doct_adhNo;
 
 
 DROP DATABASE Laboratory;
