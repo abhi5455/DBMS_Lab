@@ -189,7 +189,6 @@ WHERE rollNo IN (
       HAVING COUNT(DISTINCT guide_id) >= 2
 );
 
-
 -- (d)
 
 SELECT *
