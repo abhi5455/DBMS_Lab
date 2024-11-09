@@ -21,4 +21,3 @@ KTU S5 DBMS Lab
 <br>
 <h2>PL/SQL</h2>
 <p> PL/SQL (Procedural Language/Structured Query Language) is Oracle's procedural extension for SQL, allowing for structured and complex programming within the database. It is commonly used in Oracle databases for writing stored procedures, functions, and triggers, enabling developers to execute SQL statements in a procedural format. PL/SQL supports variables, loops, conditions, and error handling, which are essential for building robust and efficient database applications. </p>
-<br>
